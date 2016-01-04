@@ -3,9 +3,10 @@ MAINTAINER Matthew Bentley "bentley@case.edu"
 
 ENV USER "Matthew Bentley"
 
-ADD . /source/
-WORKDIR /source/
+RUN mkdir /hackcwru/
+ADD . /hackcwru/
+WORKDIR /hackcwru/
 
 RUN cargo build --release
 
-CMD ["/source/target/release/hackcwru"]
+CMD ["/hackcwru/target/release/hackcwru"]
