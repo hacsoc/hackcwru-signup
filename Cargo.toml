@@ -1,0 +1,16 @@
+[package]
+name = "hackcwru"
+version = "0.1.0"
+authors = ["Matthew Bentley <matthew.t.bentley@gmail.com>"]
+
+[dependencies]
+nickel = "*"
+rustc-serialize = "*"
+hyper = "*"
+modifier = "*"
+postgres = "*"
+r2d2_postgres = "*"
+r2d2 = "*"
+
+[dependencies.nickel_postgres]
+git = "https://github.com/matthewbentley/nickel-postgres.git"
