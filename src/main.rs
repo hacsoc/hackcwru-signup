@@ -161,7 +161,7 @@ fn main() {
             Err(e) => println!("{:?}", e)
         }
 
-        return response.redirect("http://hack.cwru.edu")
+        return response.redirect("http://hack.cwru.edu/register.html")
     });
 
     app.get("/start", middleware! { |_req, response|
