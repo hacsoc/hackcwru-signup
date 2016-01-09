@@ -75,10 +75,20 @@ macro_rules! optry {
     }
 }
 
+macro_rules! env_err {
+    ( $var:expr, $error:expr ) => {
+        env::var($var).expect($error)
+    };
+    ( $var:expr ) => {
+        env_err!($var, &format!("Failed to get env var {}", $var))
+    }
+}
+
+
 fn do_request(code: &str) -> Option<Data> {
-    let id = env::var("ID").expect("Failed to get ID value");
-    let secret = env::var("SECRET").expect("Failed to get SECRET value");
-    let redirect = env::var("REDIRECT").expect("Failed to get REDIRECT value");
+    let id = env_err!("ID");
+    let secret = env_err!("SECRET");
+    let redirect = env_err!("REDIRECT");
 
     let url = format!("https://my.mlh.io/oauth/token?client_id={}&client_secret={}&code={}&redirect_uri={}&grant_type=authorization_code",
                       id, secret, code, redirect);
@@ -114,13 +124,17 @@ fn do_request(code: &str) -> Option<Data> {
 
     let payload_str = json::encode(&payload).unwrap();
 
-    let url3 = env::var("SLACKURL").expect("Failed to get slack url");
+    let slackurl = env_err!("SLACKURL");
 
-    let _res = optry!(client.post(&url3)
+    let _res = optry!(client.post(&slackurl)
                  .body(&payload_str)
                  .send().ok());
 
     Some(person_data)
+}
+
+fn slack_send(user: User) {
+//    let url = env
 }
 
 fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
@@ -150,8 +164,7 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
 fn main() {
     let mut app = Nickel::new();
 
-    let postgres_url = env::var("DATABASE")
-        .expect("Failed to get DATABASE value");
+    let postgres_url = env_err!("DATABASE");
     let dbpool = PostgresMiddleware::new(&*postgres_url, SslMode::None, 5,
                                          Box::new(NopErrorHandler))
         .expect("Failed to start PostgresMiddleware");
@@ -189,9 +202,8 @@ fn main() {
     });
 
     app.get("/start", middleware! { |_req, response|
-        let id = env::var("ID").expect("Failed to get ID value");
-        let redirect = env::var("REDIRECT")
-            .expect("Failed to get REDIRECT value");
+        let id = env_err!("ID");
+        let redirect = env_err!("REDIRECT");
         return response.redirect(
             format!(
                     "http://my.mlh.io/oauth/authorize?client_id={}&redirect_uri={}&response_type=code",
