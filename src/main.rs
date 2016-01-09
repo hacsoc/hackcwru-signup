@@ -1,4 +1,4 @@
-#![feature(convert)]
+//#![feature(convert)]
 
 #[macro_use] extern crate nickel;
 extern crate rustc_serialize;
@@ -57,6 +57,14 @@ struct TokenResp {
     created_at: u64,
 }
 
+#[derive(RustcDecodable, RustcEncodable, Debug)]
+struct Payload {
+    channel: String,
+    username: String,
+    text: String,
+    icon_emoji: String,
+}
+
 
 macro_rules! optry {
     ( $x:expr ) => {
@@ -76,27 +84,43 @@ fn do_request(code: &str) -> Option<Data> {
                       id, secret, code, redirect);
 
     let client = Client::new();
-    let mut res = optry!(client.post(url.as_str())
+    let mut res = optry!(client.post(&url)
         .header(Connection::close())
         .send().ok());
 
     let mut body = String::new();
     optry!(res.read_to_string(&mut body).ok());
 
-    let token: TokenResp = optry!(json::decode(body.as_str()).ok());
+    let token: TokenResp = optry!(json::decode(&body).ok());
     let url2 = format!("https://my.mlh.io/api/v1/user?access_token={}",
                        token.access_token);
 
-    res = optry!(client.get(url2.as_str())
+    res = optry!(client.get(&url2)
         .header(Connection::close())
         .send().ok());
     body = String::new();
     optry!(res.read_to_string(&mut body).ok());
 
-    match json::decode(body.as_str()) {
-        Ok(b) => Some(b),
-        Err(_) => None,
-    }
+    let person_data: Data = optry!(json::decode(&body).ok());
+
+    let payload = Payload {
+        channel: "#hackcwru".to_string(),
+        username: "Signup bot".to_string(),
+        icon_emoji: ":hackcwru:".to_string(),
+        text: format!("{} from {} has signed up!",
+                      person_data.data.first_name,
+                      person_data.data.school.name),
+    };
+
+    let payload_str = json::encode(&payload).unwrap();
+
+    let url3 = env::var("SLACKURL").expect("Failed to get slack url");
+
+    let _res = optry!(client.post(&url3)
+                 .body(&payload_str)
+                 .send().ok());
+
+    Some(person_data)
 }
 
 fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
@@ -181,5 +205,5 @@ fn main() {
         Err(_) => "127.0.0.1:8080".to_string(),
     };
 
-    app.listen(bind.as_str());
+    app.listen(&bind[..]);
 }
