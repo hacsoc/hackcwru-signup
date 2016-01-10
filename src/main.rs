@@ -83,6 +83,10 @@ enum RequestError {
     Api(ApiError),
 }
 
+// `env_err!(var, message)` gets `var` from the environment, and panics with
+// `message` if that fails
+// `env_err!(var)` gets `var` from the environment and panics with `"Failed to
+// get env var $var"` if that fails
 macro_rules! env_err {
     ( $var:expr, $error:expr ) => {
         env::var($var).expect($error)
@@ -92,6 +96,8 @@ macro_rules! env_err {
     }
 }
 
+// Error handling code.  Expands to impl-ing From for enum_t from from_t to to_t
+// See https://doc.rust-lang.org/book/error-handling.html for a full description
 macro_rules! impl_from {
     ( $from_t:path, $to_t:path, $enum_t:path ) => {
         impl From<$from_t> for $enum_t {
@@ -102,6 +108,7 @@ macro_rules! impl_from {
     }
 }
 
+// All the impls for RequestError
 impl_from!(hyper::error::Error, RequestError::Hyper, RequestError);
 impl_from!(std::io::Error, RequestError::Io, RequestError);
 impl_from!(rustc_serialize::json::DecoderError, RequestError::JsonDec,
@@ -110,6 +117,7 @@ impl_from!(rustc_serialize::json::EncoderError, RequestError::JsonEnc,
            RequestError);
 impl_from!(ApiError, RequestError::Api, RequestError);
 
+// Checks for 4xx or 5xx errors and returns the appropriate ApiError
 fn check_http_error(res: &Response) -> Result<(), ApiError> {
     match res.status.class() {
         StatusClass::ClientError => Err(ApiError::ClientError),
@@ -118,6 +126,8 @@ fn check_http_error(res: &Response) -> Result<(), ApiError> {
     }
 }
 
+// Do the OAUTH stuff for my.mlh.io
+// TODO: Something better about the long api urls
 fn do_request(code: &str) -> Result<Data, RequestError> {
     let id = env_err!("ID");
     let secret = env_err!("SECRET");
@@ -154,6 +164,7 @@ fn do_request(code: &str) -> Result<Data, RequestError> {
     Ok(person_data)
 }
 
+// Send a message to slack when a new user signs up
 fn slack_send(user: User) -> Result<(), RequestError> {
     let url = env_err!("SLACKURL");
     let client = Client::new();
@@ -175,6 +186,7 @@ fn slack_send(user: User) -> Result<(), RequestError> {
     Ok(())
 }
 
+// Create the table if it doesn't exist.  Runs on each startup
 fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
     let _r = conn.execute(
             "CREATE TABLE IF NOT EXISTS person (
@@ -228,6 +240,7 @@ fn main() {
             }
         }.data;
 
+        // TODO: make this a function
         let r = conn.execute(
                 "INSERT INTO person (id, email, created_at, updated_at,
                 first_name, last_name, graduation, major, shirt_size,
