@@ -172,8 +172,9 @@ fn slack_send(user: User) -> Result<(), RequestError> {
         channel: "#hackcwru".to_string(),
         username: "Signup bot".to_string(),
         icon_emoji: ":hackcwru:".to_string(),
-        text: format!("{} from {} has signed up!",
+        text: format!("{}, a {} major from {}, has signed up!",
                       user.first_name,
+                      user.major,
                       user.school.name),
     };
     let payload_str = try!(json::encode(&payload));
