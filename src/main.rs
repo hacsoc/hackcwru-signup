@@ -225,7 +225,8 @@ fn main() {
 
     app.get("/callback", middleware! { |request, mut response|
         let conn = request.db_conn();
-        let redirect = env_err!("FINALREDIRECT");
+        let redirect_success = env_err!("FINALREDIRECT");
+        let redirect_failure = env_err!("REDIRECTERR");
         let code = match request.query().get("code") {
             Some(s) => s,
             None => {
@@ -257,16 +258,20 @@ fn main() {
                   &user_data.gender, &user_data.phone_number,
                   &user_data.school.id, &user_data.school.name]
             );
-        match r {
+        let redirect = match r {
             Ok(v) => {
                 println!("Add to database succeeded with status {:?}", v);
                 match slack_send(user_data) {
                     Ok(_) => println!("Slack send worked"),
                     Err(e) => println!("Slack send failed with error: {:?}", e)
-                };
+                }
+                redirect_success
             },
-            Err(e) => println!("Add to database failed: {:?}", e)
-        }
+            Err(e) => {
+                println!("Add to database failed: {:?}", e);
+                redirect_failure
+            }
+        };
 
         return response.redirect(&redirect[..]);
     });
