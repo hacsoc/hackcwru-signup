@@ -225,6 +225,7 @@ fn main() {
 
     app.get("/callback", middleware! { |request, mut response|
         let conn = request.db_conn();
+        let redirect = env_err!("FINALREDIRECT");
         let code = match request.query().get("code") {
             Some(s) => s,
             None => {
@@ -267,7 +268,7 @@ fn main() {
             Err(e) => println!("Add to database failed: {:?}", e)
         }
 
-        return response.redirect("http://hack.cwru.edu/register.html")
+        return response.redirect(&redirect[..]);
     });
 
     app.get("/start", middleware! { |_req, response|
