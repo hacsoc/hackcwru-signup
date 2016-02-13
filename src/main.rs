@@ -215,6 +215,14 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
     let _r = conn.execute(
             "ALTER TABLE person ADD COLUMN signup_time VARCHAR", &[]
         );
+    let _r = conn.execute(
+            "ALTER TABLE person ADD COLUMN signed_in
+            BOOLEAN NOT NULL DEFAULT FALSE",
+        &[]
+        );
+    let _r = conn.execute(
+            "ALTER TABLE person ADD COLUMN signed_in_time VARCHAR", &[]
+        );
 }
 
 fn main() {
