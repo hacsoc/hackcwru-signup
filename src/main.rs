@@ -257,7 +257,7 @@ fn main() {
                 dietary_restrictions, special_needs, date_of_birth, gender,
                 phone_number, school_id, school_name, signup_time) VALUES ($1,
                 $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-                $16)",
+                $16, $17)",
                 &[&user_data.id, &user_data.email, &user_data.created_at,
                   &user_data.updated_at, &user_data.first_name,
                   &user_data.last_name, &user_data.graduation, &user_data.major,
