@@ -19,7 +19,7 @@ use hyper::client::response::Response;
 use std::io::Read;
 use std::env;
 use r2d2::{NopErrorHandler, PooledConnection};
-use r2d2_postgres::{SslMode, PostgresConnectionManager};
+use r2d2_postgres::{TlsMode, PostgresConnectionManager};
 use nickel_postgres::{PostgresMiddleware, PostgresRequestExtensions};
 
 #[derive(RustcDecodable, Debug)]
@@ -216,7 +216,7 @@ fn main() {
     let mut app = Nickel::new();
 
     let postgres_url = env_err!("DATABASE");
-    let dbpool = PostgresMiddleware::new(&*postgres_url, SslMode::None, 5,
+    let dbpool = PostgresMiddleware::new(&*postgres_url, TlsMode::None, 5,
                                          Box::new(NopErrorHandler))
         .expect("Failed to start PostgresMiddleware");
 
