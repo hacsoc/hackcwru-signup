@@ -8,6 +8,7 @@ extern crate nickel_postgres;
 extern crate postgres;
 extern crate r2d2_postgres;
 extern crate r2d2;
+extern crate time;
 
 use nickel::{Nickel, HttpRouter, QueryString};
 use nickel::extensions::Redirect;
@@ -22,6 +23,7 @@ use std::env;
 use r2d2::{NopErrorHandler, PooledConnection};
 use r2d2_postgres::{TlsMode, PostgresConnectionManager};
 use nickel_postgres::{PostgresMiddleware, PostgresRequestExtensions};
+use time::now;
 
 #[derive(RustcDecodable, Debug)]
 struct Data {
@@ -215,13 +217,25 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
                 school_id integer,
                 school_name VARCHAR
                 )",
-                     &[]);
+            &[]
+        );
     let _r = conn.execute("ALTER TABLE person ADD COLUMN year integer \
                           NOT NULL DEFAULT 2016",
                           &[]);
     let _r = conn.execute("ALTER TABLE person ALTER COLUMN graduation \
                           DROP NOT NULL",
                           &[]);
+    let _r = conn.execute(
+            "ALTER TABLE person ADD COLUMN signup_time VARCHAR", &[]
+        );
+    let _r = conn.execute(
+            "ALTER TABLE person ADD COLUMN signed_in
+            BOOLEAN NOT NULL DEFAULT FALSE",
+        &[]
+        );
+    let _r = conn.execute(
+            "ALTER TABLE person ADD COLUMN signed_in_time VARCHAR", &[]
+        );
 }
 
 fn main() {
@@ -256,20 +270,23 @@ fn main() {
             }
         }.data;
 
+        let now = now();
+        let now_s = format!("{}", now.rfc3339());
         // TODO: make this a function
         let r = conn.execute(
                 "INSERT INTO person (id, email, created_at, updated_at,
                 first_name, last_name, major, shirt_size,
                 dietary_restrictions, special_needs, date_of_birth, gender,
-                phone_number, school_id, school_name, year) VALUES ($1, $2, $3,
-                $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+                phone_number, school_id, school_name, year, signup_time) VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                $15, $16, $17)",
                 &[&user_data.id, &user_data.email, &user_data.created_at,
                   &user_data.updated_at, &user_data.first_name,
                   &user_data.last_name, &user_data.major,
                   &user_data.shirt_size, &user_data.dietary_restrictions,
                   &user_data.special_needs, &user_data.date_of_birth,
                   &user_data.gender, &user_data.phone_number,
-                  &user_data.school.id, &user_data.school.name, &year]
+                  &user_data.school.id, &user_data.school.name, &year, &now_s]
             );
         let redirect = match r {
             Ok(v) => {

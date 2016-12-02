@@ -11,6 +11,7 @@ modifier = "*"
 postgres = "*"
 r2d2_postgres = "*"
 r2d2 = "*"
+time = "*"
 
 [dependencies.nickel_postgres]
 git = "https://github.com/matthewbentley/nickel-postgres.git"
