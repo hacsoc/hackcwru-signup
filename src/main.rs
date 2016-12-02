@@ -1,6 +1,7 @@
 //#![feature(convert)]
 
-#[macro_use] extern crate nickel;
+#[macro_use]
+extern crate nickel;
 extern crate rustc_serialize;
 extern crate hyper;
 extern crate nickel_postgres;
@@ -110,9 +111,11 @@ macro_rules! impl_from {
 // All the impls for RequestError
 impl_from!(hyper::error::Error, RequestError::Hyper, RequestError);
 impl_from!(std::io::Error, RequestError::Io, RequestError);
-impl_from!(rustc_serialize::json::DecoderError, RequestError::JsonDec,
+impl_from!(rustc_serialize::json::DecoderError,
+           RequestError::JsonDec,
            RequestError);
-impl_from!(rustc_serialize::json::EncoderError, RequestError::JsonEnc,
+impl_from!(rustc_serialize::json::EncoderError,
+           RequestError::JsonEnc,
            RequestError);
 impl_from!(ApiError, RequestError::Api, RequestError);
 
@@ -121,7 +124,7 @@ fn check_http_error(res: &Response) -> Result<(), ApiError> {
     match res.status.class() {
         StatusClass::ClientError => Err(ApiError::ClientError),
         StatusClass::ServerError => Err(ApiError::ServerError),
-        _ => Ok(())
+        _ => Ok(()),
     }
 }
 
@@ -132,8 +135,13 @@ fn do_request(code: &str) -> Result<Data, RequestError> {
     let secret = env_err!("SECRET");
     let redirect = env_err!("REDIRECT");
 
-    let url = format!("https://my.mlh.io/oauth/token?client_id={}&client_secret={}&code={}&redirect_uri={}&grant_type=authorization_code",
-                      id, secret, code, redirect);
+    let url = format!("https://my.mlh.io/oauth/token?client_id={}&\
+                      client_secret={}&code={}&redirect_uri={}&\
+                      grant_type=authorization_code",
+                      id,
+                      secret,
+                      code,
+                      redirect);
 
     let client = Client::new();
     let mut res = try!(client.post(&url)
@@ -188,8 +196,8 @@ fn slack_send(user: User) -> Result<(), RequestError> {
 
 // Create the table if it doesn't exist.  Runs on each startup
 fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
-    let _r = conn.execute(
-            "CREATE TABLE IF NOT EXISTS person (
+    let _r =
+        conn.execute("CREATE TABLE IF NOT EXISTS person (
                 id SERIAL PRIMARY KEY,
                 email VARCHAR NOT NULL,
                 created_at VARCHAR NOT NULL,
@@ -207,25 +215,22 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
                 school_id integer,
                 school_name VARCHAR
                 )",
-            &[]
-        );
-    let _r = conn.execute(
-            "ALTER TABLE person ADD COLUMN year integer NOT NULL DEFAULT 2016",
-            &[]
-        );
-    let _r = conn.execute(
-            "ALTER TABLE person ALTER COLUMN graduation DROP NOT NULL",
-            &[]
-        );
+                     &[]);
+    let _r = conn.execute("ALTER TABLE person ADD COLUMN year integer \
+                          NOT NULL DEFAULT 2016",
+                          &[]);
+    let _r = conn.execute("ALTER TABLE person ALTER COLUMN graduation \
+                          DROP NOT NULL",
+                          &[]);
 }
 
 fn main() {
     let mut app = Nickel::new();
 
     let postgres_url = env_err!("DATABASE");
-    let dbpool = PostgresMiddleware::new(&*postgres_url, TlsMode::None, 5,
-                                         Box::new(NopErrorHandler))
-        .expect("Failed to start PostgresMiddleware");
+    let dbpool =
+        PostgresMiddleware::new(&*postgres_url, TlsMode::None, 5, Box::new(NopErrorHandler))
+            .expect("Failed to start PostgresMiddleware");
 
     create_table(dbpool.pool.clone().get().unwrap());
     app.utilize(dbpool);
@@ -289,7 +294,8 @@ fn main() {
         let redirect = env_err!("REDIRECT");
         return response.redirect(
             format!(
-                    "http://my.mlh.io/oauth/authorize?client_id={}&redirect_uri={}&response_type=code",
+                    "http://my.mlh.io/oauth/authorize?client_id={}&\
+                    redirect_uri={}&response_type=code",
                     id, redirect
                 )
             );
