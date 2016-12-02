@@ -178,7 +178,7 @@ fn slack_send(user: User) -> Result<(), RequestError> {
     let url = env_err!("SLACKURL");
     let client = Client::new();
     let payload = Payload {
-        channel: "#hackcwru".to_string(),
+        channel: "#signups".to_string(),
         username: "Signup bot".to_string(),
         icon_emoji: ":hackcwru:".to_string(),
         text: format!("{}, a {} major from {}, has signed up!",
