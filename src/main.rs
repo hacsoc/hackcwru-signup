@@ -236,6 +236,14 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
     let _r = conn.execute(
             "ALTER TABLE person ADD COLUMN signed_in_time VARCHAR", &[]
         );
+
+    let _r = conn.execute(
+            "ALTER TABLE person DROP CONSTRAINT person_pkey", &[]
+        );
+
+    let _r = conn.execute(
+            "ALTER TABLE person ADD PRIMARY KEY (id, year)", &[]
+        );
 }
 
 fn main() {
