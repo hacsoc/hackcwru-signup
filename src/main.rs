@@ -219,6 +219,9 @@ fn create_table(conn: PooledConnection<PostgresConnectionManager>) {
                 )",
             &[]
         );
+    let _r = conn.execute("CREATE TABLE IF NOT EXISTS email (email VARCHAR \
+                          PRIMARY KEY)",
+                          &[]);
     let _r = conn.execute("ALTER TABLE person ADD COLUMN year integer \
                           NOT NULL DEFAULT 2016",
                           &[]);
@@ -324,6 +327,26 @@ fn main() {
                     id, redirect
                 )
             );
+    });
+
+    app.post("/email", middleware! { |req, res|
+        let conn = req.db_conn();
+        let email = req.param("email").unwrap();
+        let redirect_success = env_err!("FINALREDIRECT");
+        let redirect_failure = env_err!("REDIRECTERR");
+        let r = conn.execute("INSERT INTO email VALEUS $1", &[&email]);
+        let redirect = match r {
+            Ok(v) => {
+                println!("Add to database succeeded with status {:?}", v);
+                redirect_success
+            },
+            Err(e) => {
+                println!("Add to database failed: {:?}", e);
+                redirect_failure
+            }
+        };
+
+        return res.redirect(&redirect[..]);
     });
 
     let bind = match env::var("BIND") {
