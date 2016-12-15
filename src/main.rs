@@ -331,7 +331,7 @@ fn main() {
 
     app.get("/email", middleware! { |req, res|
         let conn = req.db_conn();
-        let email = req.param("email").unwrap();
+        let email = req.query().get("email").unwrap();
         let redirect_success = env_err!("FINALREDIRECT");
         let redirect_failure = env_err!("REDIRECTERR");
         let r = conn.execute("INSERT INTO email VALEUS $1", &[&email]);
