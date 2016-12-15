@@ -1,7 +1,9 @@
-FROM schickling/rust
+FROM scorpil/rust:beta
 MAINTAINER Matthew Bentley "bentley@case.edu"
 
 ENV USER "Matthew Bentley"
+
+RUN apt update && apt install -y libssl-dev
 
 RUN mkdir /hackcwru/
 ADD . /hackcwru/
