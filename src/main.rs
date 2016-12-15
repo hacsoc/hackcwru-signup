@@ -329,7 +329,7 @@ fn main() {
             );
     });
 
-    app.post("/email", middleware! { |req, res|
+    app.get("/email", middleware! { |req, res|
         let conn = req.db_conn();
         let email = req.param("email").unwrap();
         let redirect_success = env_err!("FINALREDIRECT");
