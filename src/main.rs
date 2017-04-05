@@ -15,7 +15,7 @@ use nickel::extensions::Redirect;
 use nickel::status::StatusCode;
 use rustc_serialize::json;
 use hyper::Client;
-use hyper::header::Connection;
+use hyper::header::{Connection, Authorization, Basic};
 use hyper::status::StatusClass;
 use hyper::client::response::Response;
 use std::io::Read;
@@ -70,6 +70,19 @@ struct Payload {
     icon_emoji: String,
 }
 
+#[derive(RustcEncodable, Debug)]
+struct MailChimpUser {
+    FNAME: String,
+    LNAME: String,
+}
+
+#[derive(RustcEncodable, Debug)]
+struct MailChimpData {
+    email_address: String,
+    status: String,
+    merge_fields: MailChimpUser,
+}
+
 #[derive(Debug)]
 enum ApiError {
     ClientError,
@@ -120,6 +133,19 @@ impl_from!(rustc_serialize::json::EncoderError,
            RequestError::JsonEnc,
            RequestError);
 impl_from!(ApiError, RequestError::Api, RequestError);
+
+impl From<User> for MailChimpData {
+    fn from(user: User) -> MailChimpData {
+        MailChimpData {
+            merge_fields: MailChimpUser {
+                FNAME: user.first_name,
+                LNAME: user.last_name,
+            },
+            email_address: user.email,
+            status: "subscribed".to_owned(),
+        }
+    }
+}
 
 // Checks for 4xx or 5xx errors and returns the appropriate ApiError
 fn check_http_error(res: &Response) -> Result<(), ApiError> {
@@ -174,7 +200,7 @@ fn do_request(code: &str) -> Result<Data, RequestError> {
 }
 
 // Send a message to slack when a new user signs up
-fn slack_send(user: User) -> Result<(), RequestError> {
+fn slack_send(user: &User) -> Result<(), RequestError> {
     let url = env_err!("SLACKURL");
     let client = Client::new();
     let payload = Payload {
@@ -190,6 +216,27 @@ fn slack_send(user: User) -> Result<(), RequestError> {
     let res = try!(client.post(&url)
         .body(&payload_str)
         .send());
+
+    try!(check_http_error(&res));
+
+    Ok(())
+}
+
+fn mailchimp_add(user: User) -> Result<(), RequestError> {
+    let url = env_err!("MAILCHIMPURL");
+    let auth = env_err!("MAILCHIMPAPIKEY");
+    let auth_header = Authorization(
+        Basic {
+            username: "foobar".to_owned(),
+            password: Some(auth),
+        });
+    let client = Client::new();
+    let mailchimpdata = MailChimpData::from(user);
+    let mailchimpdata_str = try!(json::encode(&mailchimpdata));
+    let res = try!(client.post(&url)
+                   .body(&mailchimpdata_str)
+                   .header(auth_header)
+                   .send());
 
     try!(check_http_error(&res));
 
@@ -302,9 +349,13 @@ fn main() {
         let redirect = match r {
             Ok(v) => {
                 println!("Add to database succeeded with status {:?}", v);
-                match slack_send(user_data) {
+                match slack_send(&user_data) {
                     Ok(_) => println!("Slack send worked"),
                     Err(e) => println!("Slack send failed with error: {:?}", e)
+                }
+                match mailchimp_add(user_data) {
+                    Ok(_) => println!("Mailchimp user added!"),
+                    Err(e) => println!("Mailchimp add failed with: {:?}", e)
                 }
                 redirect_success
             },
