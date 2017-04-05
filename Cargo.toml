@@ -7,6 +7,7 @@ authors = ["Matthew Bentley <matthew.t.bentley@gmail.com>"]
 nickel = "*"
 rustc-serialize = "*"
 hyper = "*"
+hyper-openssl = "*"
 modifier = "*"
 postgres = "*"
 r2d2_postgres = "*"
