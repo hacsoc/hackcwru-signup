@@ -3,7 +3,7 @@ MAINTAINER Matthew Bentley "bentley@case.edu"
 
 ENV USER "Matthew Bentley"
 
-RUN apt update && apt install -y libssl-dev
+RUN apt update && apt install -y libssl-dev openssl
 
 RUN mkdir /hackcwru/
 ADD . /hackcwru/

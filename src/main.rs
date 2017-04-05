@@ -4,7 +4,7 @@
 extern crate nickel;
 extern crate rustc_serialize;
 extern crate hyper;
-extern crate hyper_openssl;
+extern crate hyper_native_tls;
 extern crate nickel_postgres;
 extern crate postgres;
 extern crate r2d2_postgres;
@@ -20,7 +20,7 @@ use hyper::net::HttpsConnector;
 use hyper::header::{Connection, Authorization, Basic};
 use hyper::status::StatusClass;
 use hyper::client::response::Response;
-use hyper_openssl::OpensslClient;
+use hyper_native_tls::NativeTlsClient;
 use std::io::Read;
 use std::env;
 use r2d2::{NopErrorHandler, PooledConnection};
@@ -163,7 +163,7 @@ fn check_http_error(res: &Response) -> Result<(), ApiError> {
 // TODO: Something better about the long api urls
 fn do_request(code: &str) -> Result<Data, RequestError> {
     let id = env_err!("ID");
-    let ssl = OpensslClient::new().unwrap();
+    let ssl = NativeTlsClient::new().unwrap();
     let connector = HttpsConnector::new(ssl);
     let client = Client::with_connector(connector);
     let secret = env_err!("SECRET");
@@ -207,7 +207,9 @@ fn do_request(code: &str) -> Result<Data, RequestError> {
 // Send a message to slack when a new user signs up
 fn slack_send(user: &User) -> Result<(), RequestError> {
     let url = env_err!("SLACKURL");
-    let client = Client::new();
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
     let payload = Payload {
         channel: "#signups".to_string(),
         username: "Signup bot".to_string(),
@@ -235,7 +237,9 @@ fn mailchimp_add(user: User) -> Result<(), RequestError> {
             username: "foobar".to_owned(),
             password: Some(auth),
         });
-    let client = Client::new();
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector);
     let mailchimpdata = MailChimpData::from(user);
     let mailchimpdata_str = try!(json::encode(&mailchimpdata));
     let res = try!(client.post(&url)
